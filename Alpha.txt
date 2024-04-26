@@ -1,0 +1,473 @@
+
+on *:text:!check *:#sponge:{
+
+  if ($nick == Porygon) {
+    msg $chan I'm checking.
+    set %yourPokemon Pidgey
+    set %yourLevel $2
+    set %movecheck $readini(pidgey.ini,n,%yourPokemon,%yourLevel)
+
+    if (%movecheck != $null) { msg $chan Pidgey is about to learn %movecheck $+ . }
+    if (%movecheck == $null) { msg $chan No move set to learn }
+  }
+
+}
+
+on *:part:#sponge:{
+
+  writeini -n %pokemonuserdb.ini $nick Last_online $fulldate
+  msg $chan Last online has been updated.
+
+}
+
+on *:quit:#sponge:{
+
+  writeini -n %pokemonuserdb.ini $nick Last_online $fulldate
+  msg $chan Last online has been updated.
+
+}
+
+
+on *:join:#sponge:{ 
+
+  set %user $nick
+  msg $chan 4Welcome to the LucidIRC Pokemon RPG!
+  msg $chan © Dimension 2012 
+  msg $chan Hello %user $+ . We are currently tracing your RPG records.
+
+  var %RecordsFound = $readini(pokemonuserdb.ini,n,%user,Recorded)
+
+  if (%RecordsFound != $null) { 
+    set %RecordsFound Yes 
+    set %user $nick
+    timer 1 3 msg $chan We have traced your records. Please type6 !act begin to activate our record system.
+    halt
+  }
+
+  timer 1 3 msg $chan It appears you have not made a profile here.
+  timer 1 4 msg $chan PLEASE MAKE SURE ALL DETAILS ARE CORRECT (including spelling).
+  timer 1 7 msg $chan If you wish to make a profile, please enter the following:
+  timer 1 10 msg $chan 6!act newprofile 5<nick> <starter wanted>
+  timer 1 11 msg $chan Currently, you can choose any of these as a starter: Torchic, Chikorita, Oshawott.
+  timer 1 12 msg $chan You may now apply for a profile | set %RecordsFound No
+  timer 1 14 msg $chan Also please note: You cannot overwrite a current profile.
+
+}
+
+on *:text:!newprofile*:#sponge:{ inc %ids 1
+  if (%ids == 4) { set %ids 5 }
+
+  notice $nick Processing the new profile request... Please be patient.
+  notice $nick Do not leave this channel.
+  timer 1 1 set %userID %ids
+  timer 1 1 set %user $3
+  timer 1 3 set %starter $4
+  timer 1 5 set %yourLevel 5 | set %yourEXP 126 | set %begin $nick
+  timer 1 7 writeini -n pokemonuserdb.ini %user ID %userID
+  timer 1 8 writeini -n pokemonuserdb.ini %user Slot1Pokemon %starter
+  timer 1 9 writeini -n pokemonuserdb.ini %user Slot1Level 5
+  timer 1 11 writeini -n pokemonuserdb.ini %user Slot1EXP 126
+  timer 1 12 set %userPIN $rand(0,9) $+ $rand(0,9) $+ $rand(0,9) $+ $rand(0,9) $+ $rand(0,9) $+ $rand(0,9)
+  timer 1 13 msg $chan ....
+  timer 1 15 msg $chan Your security PIN is %userPIN - Please note this somewhere secure.
+  timer 1 16 writeini -n pokemonuserdb.ini %user PIN %userPIN
+  timer 1 18 msg $chan Your profile has been created. To begin, type6 !act begin
+  timer 1 20 writeini -n pokemonuserdb.ini %user Date_joined $fulldate
+
+}
+
+on *:text:!begin:#sponge:{ 
+
+  if (%RecordsFound == Yes) {
+
+    var %yourPokemon = $readini(pokemonuserdb.ini,n,%user,Slot1Pokemon)
+    var %yourLevel = $readini(pokemonuserdb.ini,n,%user,Slot1Level)
+    var %yourEXP = $readini(pokemonuserdb.ini,n,%user,Slot1EXP)
+    msg $chan Your  level %yourLevel %yourPokemon ( $+ %yourEXP EXP) has been retrieved. You may now commence play.
+    msg $chan Your options on Route 101: <Search>
+    msg $chan Type 6!act <command> to begin.
+    halt
+
+  }
+
+  ============If the user is truly a beginner
+
+  if ($nick == %begin) {
+    msg $chan You are on Route 101.
+    msg $chan You currently have %starter at Level %yourLevel (%yourEXP $+ EXP)
+    msg $chan Your options on Route 101: <Search>
+    msg $chan To begin, enter 6!act search
+    msg $chan To do an action, you always enter6 !act <command>
+    unset %begin
+  }
+
+}
+
+
+===================Saving the game status
+
+on *:text:!save:#sponge:{
+
+  msg $chan Currently saving your progress. Please do not leave the channel or you risk damaging your profile.
+  timer 1 1 set %user $nick
+  timer 1 2 set %yourPokemon %yourPokemon
+
+  timer 1 4 writeini -n pokemonuserdb.ini %user Recorded Yes
+  timer 1 5 writeini -n pokemonuserdb.ini %user Slot1Pokemon %yourPokemon
+  timer 1 7 writeini -n pokemonuserdb.ini %user Slot1Level %yourLevel
+  timer 1 8 writeini -n pokemonuserdb.ini %user Slot1EXP %yourEXP
+  timer 1 9 writeini -n pokemonuserdb.ini %user Last_online $fulldate
+  timer 1 11 msg $chan Your progress has been saved.
+  timer 1 12 msg $chan You may now leave the channel.
+
+}
+
+
+
+===================Search the grass
+
+on *:text:!search:#sponge:{ 
+
+  inc %yourSearches 1 | timer 1 30 dec %yourSearches 1
+
+  if (%yourSearches > 3) { 
+    notice $nick You can only search4 3 times in any4 30 second period. 
+    notice $nick Please wait 10 seconds.
+    set %yourSearches 3 
+    halt
+  }
+
+  set %wildrate $rand(1,2)
+
+
+
+  ==========Storing the information
+
+  set %user $nick
+  set %yourPokemon %yourPokemon
+
+  writeini -n pokemonuserdb.ini %user Recorded Yes
+  writeini -n pokemonuserdb.ini %user Slot1Pokemon %yourPokemon
+  writeini -n pokemonuserdb.ini %user Slot1Level %yourLevel
+  writeini -n pokemonuserdb.ini %user Slot1EXP %yourEXP
+  writeini -n pokemonuserdb.ini %user Last_online $fulldate
+
+
+  var %yourPokemon = $readini(pokemonuserdb.ini,n,%user,Slot1Pokemon)
+  var %yourLevel = $readini(pokemonuserdb.ini,n,%user,Slot1Level)
+  var %yourEXP = $readini(pokemonuserdb.ini,n,%user,Slot1EXP)
+
+  ===============Checking the variables
+
+  if (%OutOfBattle != Yes) { notice $nick You are still in a battle. To run, type !act run }
+  if (%wildrate == 1) { msg $chan No Pokemon was found! | halt }
+
+  set %wildPokemon $rand(1,4)
+
+  if (%wildPokemon == 1) { set %wildPokemon Poliwag | set %wildbaseHP 40 | set %wildbaseattack 50 | set %wildbasedef 40 | set %wildbasespeed 90 
+    set %wildmove1 Bubble | set %wildmove2 Water Gun | set %wildmove3 Bubblebeam | set %wildmove4 Rain Dance 
+    set %wildmove1base 20 | set %wildmove2base 40 | set %wildmove3base 65 | set %wildmove4base 0
+  set %wildexpbase 6.5 }
+
+  if (%wildPokemon == 2) { set %wildPokemon Sentret | set %wildbaseHP 40 | set %wildbaseattack 40 | set %wildbasedef 30 | set %wildbasespeed 20 
+    set %wildmove1 Tackle | set %wildmove2 Body Slam | set %wildmove3 Growl | set %wildmove4 Bounce
+    set %wildmove1base 40 | set %wildmove2base 85 | set %wildmove3base 0 | set %wildmove4base 80
+  set %wildexpbase 8.5  }
+
+  if (%wildPokemon == 3) { set %wildPokemon Rattata | set %wildbaseHP 30 | set %wildbaseattack 60 | set %wildbasedef 30 | set %wildbasespeed 70 
+    set %wildmove1 Scratch | set %wildmove2 Bite | set %wildmove3 Tail Whip | set %wildmove4 Super Fang 
+    set %wildmove1base 40 | set %wildmove2base 80 | set %wildmove3base 0 | set %wildmove4base 20
+  set %wildexpbase 6 }
+
+  if (%wildPokemon == 4) { set %wildPokemon Pidgey | set %wildbaseHP 40 | set %wildbaseattack 40 | set %wildbasedef 40 | set %wildbasespeed 60
+    set %wildmove1 Tackle | set %wildmove2 Wing Attack | set %wildmove3 Growl  | set %wildmove4 Fly
+    set %wildmove1base 40 | set %wildmove2base 60 | set %wildmove3base 0 | set %wildmove4base 80
+    set %wildexpbase 5 
+  }
+
+  set %rand1 $rand(1,9)
+  set %wildLevel $gettok(2.3.4.5.6.7.8.9.10, %rand1 ,46)
+
+  msg $chan You have encountered a level %wildLevel %wildPokemon $+ !
+
+  timer 1 1 set %WildAppeared yes 
+  timer 1 2 msg $chan <Fight> <Run>
+  timer 1 3 notice $nick To do anything, type !act command (eg !act run )
+
+}
+
+===========Running away from the wild pokemon
+
+on *:text:!act run:#sponge:{
+
+  if (%WildAppeared != yes) { notice $nick This is not part of your current options. | halt }
+  msg $chan You ran away!
+  set %wildPokemon $null | set %WildAppeared no | set %OutOfBattle yes
+
+}
+
+
+===========Choosing to fight the wild pokemon
+
+on *:text:!fight:#sponge:{
+  if (%WildAppeared != yes) { notice $nick This is not part of your current options. | halt }
+  notice $nick Processing....
+
+  ==========Giving choice of move to trainer
+
+  if (%MoveTurns == 0) { msg $chan Please choose your starting move. }
+  if (%MoveTurns >= 1) { msg $chan Please choose your next move. }
+
+  msg $chan Type corresponding number to move wanted.
+  msg $chan eg !act fight 1 would mean you wish to use %yourmove1
+  msg $chan %yourmove1  ( 1 )
+  msg $chan %yourmove2 ( 2 )
+  msg $chan %yourmove3 ( 3 )
+  msg $chan %yourmove4 ( 4 )
+  set %MoveChoiceGiven yes
+
+}
+
+
+==========New turn of battle
+
+on *:text:!fight*:#sponge:{
+  if (%MoveChoiceGiven != yes ) { notice $nick This is not part of your current options. | halt }
+  if (%WildAppeared != yes ) { notice $nick This is not part of your current options. | halt }
+  if ($2 == $null) { notice $nick You have not chosen a move. | halt }
+  if ($2 == 0) { msg $chan That is not a move. | msg $chan Please choose a valid move. | halt }
+  if ($2 >= 5) { msg $chan That is not a move. | msg $chan Please choose a valid move. | halt }
+
+  notice $nick Please be patient.
+  notice $nick Processing...
+
+  set %MoveChoiceGiven no
+  inc %MoveTurns 1
+
+
+  ===========Working out the stats of each pokemon
+
+  if (%MoveTurns == 1) { 
+
+    set %wildHP $round( $calc( $calc(%wildbaseHP / 10) * $calc(%wildLevel * 0.5)),0) | set %wildcurrentHP %wildHP
+    set %wildAttack $round( $calc( $calc(%wildbaseattack / 10) * $calc(%wildLevel *0.5)),0)
+    set %wildDefense $round( $calc( $calc(%wildbasedef / 10) * $calc(%wildLevel *0.5)),0)
+    set %wildSpeed $round( $calc( $calc(%wildbasespeed / 10) * $calc(%wildLevel *0.5)),0)
+    set %wildexpearned $round( $calc(%wildexpbase * %wildLevel),0)
+
+
+    set %yourHP $round( $calc( $calc(%yourbaseHP / 10) * $calc(%yourLevel * 0.5))),0) | set %yourHP %yourHP | set %yourcurrentHP %yourHP
+    set %yourAttack $round( $calc( $calc(%yourbaseattack / 10) * $calc(%yourLevel * 0.5)),0)
+    set %yourDefense $round( $calc( $calc(%yourbasedef / 10) * $calc(%yourLevel * 0.5)),0)
+    set %yourSpeed $round( $calc( $calc(%yourbasespeed / 10) * $calc(%yourLevel * 0.5)),0)
+
+  }
+
+  ===========Choosing the wild pokemon's move
+
+  :statsalreadydone
+
+  set %rand1 $rand(1,4)
+  if (%rand1 == 1) { set %wildmovebase %wildmove1base | set %wildmoveused %wildmove1 }
+  if (%rand1 == 2) { set %wildmovebase %wildmove2base | set %wildmoveused %wildmove2 }
+  if (%rand1 == 3) { set %wildmovebase %wildmove3base | set %wildmoveused %wildmove3  }
+  if (%rand1 == 4) { set %wildmovebase %wildmove4base | set %wildmoveused %wildmove4  }
+
+  ==========Evaluating choice of trainers move and setting corresponding stats for further down
+
+  if ($2 == 1) { 
+    set %yourmoveused %yourmove1 
+  set %yourmovebase %yourmovebase1 }
+
+  if ($2 == 2) { 
+    set %yourmoveused %yourmove2 
+  set %yourmovebase %yourmovebase2 }
+
+  if ($2 == 3) { 
+    set %yourmoveused %yourmove3 
+  set %yourmovebase %yourmovebase3 }
+
+  if ($2 == 4) { 
+    set %yourmoveused %yourmove4 
+  set %yourmovebase %yourmovebase4 }
+
+  if ($2 == $null) { notice $nick You have not selected a move. Please select a valid move to progress. | halt }
+
+  =========Working out the max, min power of each move and then the actual move damage
+
+  if (%wildmovebase == 0) { set %wildattacksdamage 0 | goto wildbaseiszero }
+
+  set %wildminpower $round( $calc( $calc(%wildAttack / 5) * $calc(%wildmovebase / 20)),0)
+  set %wildmaxpower $round( $calc( %wildminpower * 1.5),0)
+  set %wildmaxmovepower $round( $calc( %wildmaxpower / $calc(%yourDefense * 0.3)),0)
+  set %wildminmovepower $round( $calc( %wildminpower / $calc(%yourDefense * 0.3)),0)
+  if (%wildminmovepower == 0) { set %wildminmovepower 1 }
+
+  set %wildattacksdamage $rand(%wildminmovepower,%wildmaxmovepower)
+
+  :wildbaseiszero
+
+  if (%yourmovebase == 0) { set %yourattacksdamage 0 | goto yourbaseiszero }
+
+  set %yourminpower $round( $calc( $calc(%yourAttack / 5) * $calc(%yourmovebase / 20)),0)
+  set %yourmaxpower $round( $calc( %yourminpower * 1.5),0)
+  set %yourmaxmovepower $round( $calc( %yourmaxpower / $calc(%wildDefense * 0.3)),0)
+  set %yourminmovepower $round( $calc( %yourminpower / $calc(%wildDefefense * 0.3)),0)
+  set %yourattacksdamage $rand(%yourminpower,%yourmaxmovepower)
+  if (%wildminmovepower == 0) { set %wildminmovepower 1 }
+
+
+  :yourbaseiszero
+
+
+  ==========If you are slower than the wild pokemon
+
+
+  if (%yourSpeed < %wildSpeed) { 
+
+    :wildgoesfirst
+
+    msg $chan Your %yourPokemon $+ : Level %yourLevel ( $+ %yourcurrentHP $+ / $+ %yourHP HP)
+    msg $chan Wild %wildPokemon $+ : Level %wildlevel ( $+ %wildcurrentHP $+ / $+ %wildHP HP)
+    msg $chan -----------------------------
+    msg $chan Wild %wildPokemon used %wildmoveused and dealt %wildattacksdamage damage.
+    dec %yourcurrentHP %wildattacksdamage
+
+    if (%yourcurrentHP <= 0) { 
+
+      msg $chan %yourPokemon fainted! 
+      msg $chan Wild %wildPokemon fled!
+      msg $chan You were wiped out!
+      msg $chan ......
+      msg $chan Game over!
+      set %MoveTurns 0
+      set %GameOver yes
+      set %WildAppeared no
+      msg $chan Thanks for playing.
+      halt
+
+    }
+
+    msg $chan %yourPokemon used %yourmoveused and dealt %yourattacksdamage damage!
+    dec %wildcurrentHP %yourattacksdamage
+
+    if (%wildcurrentHP <= 0) { 
+
+      set %wildcurrentHP 0
+      set %WildAppeared no
+
+      msg $chan Wild %wildPokemon fainted! 
+      msg $chan %yourPokemon earned %wildexpearned EXP.
+      msg $chan You also earned %trainerEXP_earnt Trainer EXP.
+
+      inc %yourEXP %wildexpearned
+      inc %yourtrainerEXP %trainerEXP_earnt
+
+      set %totalEXP_nextlevel $calc( $calc(%yourLevel + 1) ^ 3 )
+      set %trainerEXP_nextlevel $calc( $calc(%yourtrainerLevel ^ 2) * 1000) 
+
+      if (%yourEXP >= %totalEXP_nextlevel ) { inc %yourLevel 1 | msg $chan %yourPokemon grew to level %yourlevel $+ ! }
+      if (%yourtrainerEXP >= %trainerEXP_nextlevel ) { inc %yourtrainerLevel 1 | msg $chan You reached Trainer Level %yourtrainerLevel $+ ! }
+
+
+      set %MoveTurns 0
+      set %OutOfBattle yes
+      halt
+
+    }
+
+    msg $chan To continue, please select your next move by going !act fight [number]
+    set %MoveChoiceGiven yes
+    set %MoveTurns 1
+    halt
+  }
+
+
+
+
+  =============If you outspeed the wild Pokemon
+
+
+  if (%yourSpeed > %wildSpeed) { 
+
+    :yougoesfirst
+
+    msg $chan Your %yourPokemon $+ : Level %yourLevel ( $+ %yourcurrentHP $+ / $+ %yourHP HP)
+    msg $chan Wild %wildPokemon $+ : Level %wildLevel ( $+ %wildcurrentHP $+ / $+ %wildHP HP)
+    msg $chan -----------------------------
+    msg $chan %yourPokemon used %yourmoveused and dealt %yourattacksdamage damage!
+    dec %wildcurrentHP %yourattacksdamage
+
+    if (%wildcurrentHP <= 0) { 
+
+      set %trainerEXP_earnt $rand($calc(250 * %wildLevel),$calc(500 * %wildlevel))
+      set %wildcurrentHP 0
+      set %WildAppeared no
+
+      msg $chan Wild %wildPokemon fainted! 
+      msg $chan %yourPokemon earned %wildexpearned EXP.
+      msg $chan You also gained %trainerEXP_earnt Trainer EXP.
+
+      inc %yourEXP %wildexpearned
+      inc %yourtrainerEXP %trainerEXP_earnt
+
+      set %totalEXP_nextlevel $calc( $calc(%yourLevel + 1) ^ 3 )
+      set %trainerEXP_nextlevel $calc( $calc(%yourtrainerLevel ^ 2) * 1000) 
+
+
+      if (%yourEXP >= %totalEXP_nextlevel ) { inc %yourLevel 1 | msg $chan %yourPokemon grew to level %yourlevel $+ ! }
+      if (%yourEXP >= %trainerEXP_nextlevel ) { inc %yourtrainerLevel 1 | msg $chan You reached Trainer Level %yourtrainerLevel $+ ! }
+
+      set %MoveTurns 0
+      set %OutOfBattle yes
+      halt
+
+    }
+
+
+
+    msg $chan Wild %wildPokemon used %wildmoveused and dealt %wildattacksdamage damage.
+    dec %yourcurrentHP %wildattacksdamage
+
+    if (%yourcurrentHP <= 0) { 
+
+      msg $chan %yourPokemon fainted! 
+      msg $chan Wild %wildPokemon fled!
+      msg $chan You were wiped out!
+      msg $chan ......
+      msg $chan Game over!
+      set %MoveTurns 0
+      set %GameOver yes
+      set %WildAppeared no
+      msg $chan Thanks for playing.
+      halt
+
+    }
+    msg $chan To continue, please select your next move by going !act fight [number]
+    set %MoveChoiceGiven yes
+    set %MoveTurns 1
+    halt
+  }
+
+  =============If both speeds are equal
+
+  if (%yourSpeed == %wildSpeed) { set %rand3 $rand(1,2)
+
+    if (%rand3 == 1) { goto wildgoesfirst }
+    if (%rand3 == 2) { goto yougoesfirst } 
+
+  }
+
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+} 
+} 
